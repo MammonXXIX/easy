@@ -4,6 +4,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "../ui/button"
 import { useClerk } from "@clerk/nextjs"
 import { useRouter } from "next/router"
+import { Badge } from "../ui/badge"
 
 const ProfileButton = () => {
   const { signOut } = useClerk()
@@ -39,7 +40,7 @@ const SearchButton = () => {
   )
 }
 
-const HomeLayout = ({ children }: {children: React.ReactNode}) => {
+const WriteLayout = ({ children }: {children: React.ReactNode}) => {
   const router = useRouter()
 
   return (
@@ -47,10 +48,13 @@ const HomeLayout = ({ children }: {children: React.ReactNode}) => {
       <div className="px-4 py-2 flex justify-between items-center">
         <div className="flex items-center space-x-6">
           <h1 className="text-4xl">EASY</h1>
-          <SearchButton />
+          <Badge>Draft</Badge>
+          <h1 className="text-sm text-muted-foreground">Saving...</h1>
         </div>
         <div className="flex items-center space-x-4">
-          <Button variant={"ghost"} onClick={() => router.push("/write")}><SquarePen /> Write</Button>
+          <Button size="sm" className="text-white bg-green-500" disabled>
+            Publish
+          </Button>
           <ProfileButton /> 
         </div> 
       </div> 
@@ -59,5 +63,5 @@ const HomeLayout = ({ children }: {children: React.ReactNode}) => {
   )
 }
 
-export default HomeLayout
+export default WriteLayout
 

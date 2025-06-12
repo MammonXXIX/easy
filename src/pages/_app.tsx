@@ -1,3 +1,4 @@
+import { ThemeProvider } from "@/providers/ThemeProvider";
 import "@/styles/globals.css";
 import { trpc } from "@/utils/trpc";
 import { ClerkProvider } from "@clerk/nextjs";
@@ -21,9 +22,11 @@ function App({ Component, pageProps }: AppPropsWithLayout) {
 
   return (
     <ClerkProvider>
-      <div className={`${poppins.className}`}>
-        {getLayout(<Component {...pageProps} />)}
-      </div>
+      <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+        <div className={`${poppins.className}`}>
+          {getLayout(<Component {...pageProps} />)}
+        </div>
+      </ThemeProvider>
     </ClerkProvider>
   )
 }
