@@ -4,6 +4,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "../ui/button"
 import { useClerk } from "@clerk/nextjs"
 import { useRouter } from "next/router"
+import { trpc } from "@/utils/trpc"
+import Link from "next/link"
 
 const ProfileButton = () => {
   const { signOut } = useClerk()
@@ -12,7 +14,7 @@ const ProfileButton = () => {
     <DropdownMenu>
       <DropdownMenuTrigger>
         <Avatar>
-          <AvatarImage src="https://github.com/shadcn.png" />
+          <AvatarImage src="" />
           <AvatarFallback>CN</AvatarFallback>
         </Avatar>
       </DropdownMenuTrigger>
@@ -42,15 +44,22 @@ const SearchButton = () => {
 const HomeLayout = ({ children }: {children: React.ReactNode}) => {
   const router = useRouter()
 
+  const { mutate: createPost } = trpc.post.createPost.useMutation({
+    onSuccess: async (data) => {
+      if (!data) return
+      router.push(`/write/${data.id}`)
+    }
+  })
+
   return (
     <div className="w-screen">
       <div className="px-4 py-2 flex justify-between items-center">
         <div className="flex items-center space-x-6">
-          <h1 className="text-4xl">EASY</h1>
+          <Link href="/">EASY</Link>
           <SearchButton />
         </div>
         <div className="flex items-center space-x-4">
-          <Button variant={"ghost"} onClick={() => router.push("/write")}><SquarePen /> Write</Button>
+          <Button variant={"ghost"} onClick={() => createPost()}><SquarePen /> Write</Button>
           <ProfileButton /> 
         </div> 
       </div> 

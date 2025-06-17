@@ -5,7 +5,7 @@ import HomeLayout from "@/components/layouts/HomeLayout";
 
 const HomePage: NextPageWithLayout = () => {
   return (
-    <div>hello</div>
+    <div></div>
   )
 }
 

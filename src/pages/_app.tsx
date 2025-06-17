@@ -4,10 +4,10 @@ import { trpc } from "@/utils/trpc";
 import { ClerkProvider } from "@clerk/nextjs";
 import { NextPage } from "next";
 import type { AppProps } from "next/app";
-import { Poppins } from 'next/font/google';
 import { ReactElement, ReactNode } from "react";
+import { Geist } from "next/font/google";
 
-const poppins = Poppins({ subsets: ["latin"], weight: ["300", "500", "700"] })
+const geist = Geist({ subsets: ['latin'] })
 
 export type NextPageWithLayout<P = object, IP = P> = NextPage<P, IP> & {
   getLayout?: (page: ReactElement) => ReactNode
@@ -22,8 +22,8 @@ function App({ Component, pageProps }: AppPropsWithLayout) {
 
   return (
     <ClerkProvider>
-      <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-        <div className={`${poppins.className}`}>
+      <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
+        <div className={`${geist.className}`}>
           {getLayout(<Component {...pageProps} />)}
         </div>
       </ThemeProvider>

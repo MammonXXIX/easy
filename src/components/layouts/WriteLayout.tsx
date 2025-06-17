@@ -1,10 +1,12 @@
-import { Book, Library, LogOut, Search, SquarePen } from "lucide-react"
+import { Book, Library, LogOut } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "../ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "../ui/button"
 import { useClerk } from "@clerk/nextjs"
 import { useRouter } from "next/router"
 import { Badge } from "../ui/badge"
+import Link from "next/link"
+import { useSavingStore } from "@/stores/SavingStore"
 
 const ProfileButton = () => {
   const { signOut } = useClerk()
@@ -13,7 +15,7 @@ const ProfileButton = () => {
     <DropdownMenu>
       <DropdownMenuTrigger>
         <Avatar>
-          <AvatarImage src="https://github.com/shadcn.png" />
+          <AvatarImage src="" />
           <AvatarFallback>CN</AvatarFallback>
         </Avatar>
       </DropdownMenuTrigger>
@@ -31,34 +33,32 @@ const ProfileButton = () => {
   )
 }
 
-const SearchButton = () => {
-  return (
-    <div className="w-[20rem] px-4 py-2 flex items-center gap-x-4 rounded-xl bg-muted">
-      <Search />
-      <h1 className="text-sm">Search</h1>
-    </div>
-  )
-}
-
 const WriteLayout = ({ children }: {children: React.ReactNode}) => {
   const router = useRouter()
+  const { id } = router.query
+
+  const postId = typeof id === "string" ? id : Array.isArray(id) ? id[0] : null
+
+  const { isSaving } = useSavingStore()
 
   return (
-    <div className="w-screen">
-      <div className="px-4 py-2 flex justify-between items-center">
+    <div className="w-screen flex flex-col">
+      <div className="px-4 py-2 fixed top-0 left-0 right-0 flex justify-between items-center bg-background z-50 shadow-lg shadow-white/10">
         <div className="flex items-center space-x-6">
-          <h1 className="text-4xl">EASY</h1>
+          <Link href="/" className="text-2xl">EASY</Link>
           <Badge>Draft</Badge>
-          <h1 className="text-sm text-muted-foreground">Saving...</h1>
+          <h1 className="text-sm text-muted-foreground">{isSaving && "Saving..."}</h1>
         </div>
         <div className="flex items-center space-x-4">
-          <Button size="sm" className="text-white bg-green-500" disabled>
-            Publish
-          </Button>
+          <Link href={`/write/preview/${postId}`}>
+            <Button variant="link" size="sm">Preview</Button>
+          </Link>
           <ProfileButton /> 
         </div> 
-      </div> 
-      {children}
+      </div>
+      <div className="pt-15">
+        {children}
+      </div>
     </div>
   )
 }
