@@ -14,7 +14,7 @@ type TiptapProps = {
 const Tiptap = ({ value, onChange }: TiptapProps) => {
   const editor = useEditor({
     extensions: extensions,
-    content: value ?? "Your Content Here...",
+    content: value,
     editorProps: {
       attributes: {
         class: "focus:outline-none"
@@ -29,7 +29,7 @@ const Tiptap = ({ value, onChange }: TiptapProps) => {
 
   useEffect(() => {
     if (editor && value !== editor.getHTML()) {
-      editor.commands.setContent(value ?? "Your Content Here");
+      editor.commands.setContent(value ?? "Your Content Here...");
     }
   }, [value, editor]);
 

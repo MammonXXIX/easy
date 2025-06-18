@@ -7,6 +7,7 @@ import { useRouter } from "next/router"
 import { Badge } from "../ui/badge"
 import Link from "next/link"
 import { useSavingStore } from "@/stores/SavingStore"
+import { useFormPostStore } from "@/stores/FormPostStore"
 
 const ProfileButton = () => {
   const { signOut } = useClerk()
@@ -40,6 +41,15 @@ const WriteLayout = ({ children }: {children: React.ReactNode}) => {
   const postId = typeof id === "string" ? id : Array.isArray(id) ? id[0] : null
 
   const { isSaving } = useSavingStore()
+  const { form } = useFormPostStore()
+
+  const handlePreview = async () => {
+    if (!form) return
+
+    const isValid = await form.trigger()
+
+    if (isValid) router.push(`/write/preview/${postId}`)
+  }
 
   return (
     <div className="w-screen flex flex-col">
@@ -50,9 +60,7 @@ const WriteLayout = ({ children }: {children: React.ReactNode}) => {
           <h1 className="text-sm text-muted-foreground">{isSaving && "Saving..."}</h1>
         </div>
         <div className="flex items-center space-x-4">
-          <Link href={`/write/preview/${postId}`}>
-            <Button variant="link" size="sm">Preview</Button>
-          </Link>
+          <Button variant="link" size="sm" onClick={handlePreview}>Preview</Button> 
           <ProfileButton /> 
         </div> 
       </div>

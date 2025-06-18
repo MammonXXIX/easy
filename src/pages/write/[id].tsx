@@ -11,21 +11,19 @@ import { trpc } from "@/utils/trpc";
 import { useRouter } from "next/router";
 import { skipToken } from "@tanstack/react-query";
 import { useSavingStore } from "@/stores/SavingStore";
+import { useFormPostStore } from "@/stores/FormPostStore";
 
 const WritePage: NextPageWithLayout = () => {
   const router = useRouter()
-  const { id } = router.query
-
-   const postId = typeof id === "string" ? id : Array.isArray(id) ? id[0] : null 
-
   const [imageUrl, setImageUrl] = useState<string | null>(null)
   const { setIsSaving } = useSavingStore()
+  const { setForm } = useFormPostStore()
+
+  const { id } = router.query
+   const postId = typeof id === "string" ? id : Array.isArray(id) ? id[0] : null  
 
   const {data: responsePost} = trpc.post.getPost.useQuery(postId ? { id: postId } : skipToken)
-  const {mutate: updatePost} = trpc.post.updatePost.useMutation({
-    onMutate: () => setIsSaving(true),
-    onSettled: () => setIsSaving(false)
-  })
+  const {mutate: updatePost} = trpc.post.updatePost.useMutation({ onMutate: () => setIsSaving(true), onSettled: () => setIsSaving(false) })
 
   const updatePostForm = useForm<PostFormSchema>({ resolver: zodResolver(postFormSchema) })
   const watchUpdatePostForm = updatePostForm.watch()
@@ -45,13 +43,15 @@ const WritePage: NextPageWithLayout = () => {
         id: responsePost.id,
         title: watchUpdatePostForm.title,
         description: watchUpdatePostForm.description,
-        content: watchUpdatePostForm.content,
+        content: watchUpdatePostForm.content, 
         imageUrl: imageUrl ?? ""
       })
-    }, 3000)
+    }, 1000)
+
+    setForm(updatePostForm)
 
     return () => clearTimeout(timeOut)
-  }, [watchUpdatePostForm.title, watchUpdatePostForm.description, watchUpdatePostForm.content, imageUrl])
+  }, [updatePostForm, watchUpdatePostForm.title, watchUpdatePostForm.description, watchUpdatePostForm.content, imageUrl]) 
 
   return (
     <div className="w-screen p-4 flex justify-center items-center">
@@ -60,7 +60,6 @@ const WritePage: NextPageWithLayout = () => {
           <PostForm 
             imageUrl={imageUrl ?? ""} 
             setImageUrl={(imageUrl) => setImageUrl(imageUrl)} 
-            onSubmit={() => console.log("on submit")} 
           />
         </Form>
       </div>

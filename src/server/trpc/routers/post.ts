@@ -17,9 +17,7 @@ export const postRouter = router({
       const post = await prisma.post.findUnique({
         where: { id: input.id },
         include: {
-          user: {
-            select: { firstName: true }
-          }
+          user: { select: { firstName: true } } 
         } 
       })
 
@@ -67,7 +65,7 @@ export const postRouter = router({
         title: z.string(),
         description: z.string(),
         content: z.string(),
-        imageUrl: z.string()
+        imageUrl: z.string(),
       }) 
     )
     .mutation(async ({ ctx, input}) => {
@@ -81,8 +79,16 @@ export const postRouter = router({
           content: input.content,
           imageUrl: input.imageUrl
         }
-      })
+      }) 
 
       return updatePost
+    }),
+
+    getTopics: protectedProcedure.query(async ({ ctx }) => {
+      const { prisma } = ctx
+
+      const topics = await prisma.topic.findMany()
+
+      return topics
     })
 })
