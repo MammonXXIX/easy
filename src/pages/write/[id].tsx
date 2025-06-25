@@ -2,7 +2,6 @@ import React, { ReactElement, useEffect, useState } from "react"
 import { NextPageWithLayout } from "../_app"
 import WriteLayout from "@/components/layouts/WriteLayout"
 import { zodResolver } from '@hookform/resolvers/zod';
-
 import { useForm } from "react-hook-form"
 import { PostFormSchema, postFormSchema } from "@/forms/post";
 import { Form } from "@/components/ui/form";
@@ -19,49 +18,58 @@ const WritePage: NextPageWithLayout = () => {
   const { setIsSaving } = useSavingStore()
   const { setForm } = useFormPostStore()
 
-  const { id } = router.query
-   const postId = typeof id === "string" ? id : Array.isArray(id) ? id[0] : null  
-
-  const {data: responsePost} = trpc.post.getPost.useQuery(postId ? { id: postId } : skipToken)
-  const {mutate: updatePost} = trpc.post.updatePost.useMutation({ onMutate: () => setIsSaving(true), onSettled: () => setIsSaving(false) })
-
   const updatePostForm = useForm<PostFormSchema>({ resolver: zodResolver(postFormSchema) })
   const watchUpdatePostForm = updatePostForm.watch()
 
-  useEffect(() => {
-    if (responsePost) {
-      updatePostForm.reset({...responsePost})
-      setImageUrl(responsePost.imageUrl)
-    }
-  }, [responsePost, updatePostForm])
+  const { id } = router.query
+  const postId = typeof id === "string" ? id : Array.isArray(id) ? id[0] : null  
+
+  const { data: responseUserPost, isLoading: loadingUserPost, error: errorUserPost } = trpc.post.getUserPost.useQuery(postId ? { id: postId } : skipToken)
+  const { data: responseTopicOnPost, isLoading: loadingTopicOnPost } = trpc.topic.getTopicOnPost.useQuery(postId ? { id: postId } : skipToken)
+  const { mutate: updatePost } = trpc.post.updatePost.useMutation({ onMutate: () => setIsSaving(true), onSettled: () => setIsSaving(false) }) 
+
+  if (errorUserPost) {
+    if (errorUserPost.data?.code === "FORBIDDEN") router.replace("/")
+  }
 
   useEffect(() => {
-    if (!responsePost || !watchUpdatePostForm) return
+    if (responseUserPost && responseTopicOnPost) {
+      updatePostForm.reset({...responseUserPost, topics: responseTopicOnPost.map((topic) => topic.topicId)})
+      setImageUrl(responseUserPost.imageUrl)
+    }
+  }, [responseUserPost, responseTopicOnPost, updatePostForm])
+
+  useEffect(() => {
+    if (!responseUserPost || !watchUpdatePostForm) return
 
     const timeOut = setTimeout(() => {
       updatePost({
-        id: responsePost.id,
+        id: responseUserPost.id,
         title: watchUpdatePostForm.title,
         description: watchUpdatePostForm.description,
         content: watchUpdatePostForm.content, 
-        imageUrl: imageUrl ?? ""
+        imageUrl: imageUrl ?? "",
+        topics: watchUpdatePostForm.topics
       })
     }, 1000)
 
     setForm(updatePostForm)
 
     return () => clearTimeout(timeOut)
-  }, [updatePostForm, watchUpdatePostForm.title, watchUpdatePostForm.description, watchUpdatePostForm.content, imageUrl]) 
+  }, [updatePostForm, watchUpdatePostForm.title, watchUpdatePostForm.description, watchUpdatePostForm.content, watchUpdatePostForm.topics, imageUrl]) 
 
   return (
-    <div className="w-screen p-4 flex justify-center items-center">
-      <div className="w-4xl flex flex-col">
-        <Form {...updatePostForm}>
-          <PostForm 
-            imageUrl={imageUrl ?? ""} 
-            setImageUrl={(imageUrl) => setImageUrl(imageUrl)} 
-          />
-        </Form>
+    <div className="w-screen p-4 flex justify-center items-center"> 
+      <div className="w-4xl">
+        { loadingUserPost && loadingTopicOnPost && <span>Loading...</span> }
+        { responseUserPost && responseTopicOnPost && 
+          <Form {...updatePostForm}>
+            <PostForm 
+              imageUrl={imageUrl ?? ""} 
+              setImageUrl={(imageUrl) => setImageUrl(imageUrl)} 
+            />
+          </Form>
+        }
       </div>
     </div>
   )

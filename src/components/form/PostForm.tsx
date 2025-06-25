@@ -22,15 +22,21 @@ type PostFormProps = {
 }
 
 const PostForm = ({ imageUrl, setImageUrl }: PostFormProps) => {
-  const router = useRouter() 
+  const router = useRouter()
+  const form = useFormContext<PostFormSchema>()
 
   const { id } = router.query
   const postId = typeof id === "string" ? id : Array.isArray(id) ? id[0] : null
 
-  const form = useFormContext<PostFormSchema>()
+  const trpcUtils = trpc.useUtils()
 
-  const { mutateAsync: createSupabaseSignedUploadUrl } = trpc.post.createSupabaseSignedUploadUrl.useMutation()
-  const { data: responseGetTopics } = trpc.post.getTopics.useQuery()
+  const { data: responseGetTopics } = trpc.topic.getTopics.useQuery()
+  const { mutate: deleteTopicOnPost } = trpc.topic.deleteTopicOnPost.useMutation({
+    onSuccess: async () => {
+      await trpcUtils.topic.getTopicOnPost.invalidate()
+    }
+  })
+  const { mutateAsync: createSupabaseSignedUploadUrl } = trpc.post.createSupabaseSignedUploadUrl.useMutation() 
   
   const handleImageOnChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
@@ -47,7 +53,13 @@ const PostForm = ({ imageUrl, setImageUrl }: PostFormProps) => {
       setImageUrl(res)
       console.log("Uploaded Successfully")
     }
-  } 
+  }
+
+  const handleDeleteTopicOnPost = (topicId: string) => {
+    if (!postId || !topicId) return
+
+    deleteTopicOnPost({ postId, topicId })
+  }
 
   return (
     <form className="space-y-4">
@@ -75,58 +87,59 @@ const PostForm = ({ imageUrl, setImageUrl }: PostFormProps) => {
           const currentTopics = field.value || []
 
           return (
-            <Popover>
-              <PopoverTrigger asChild>
-                <FormControl>
-                  <Button variant="outline" role="combobox" className="w-full justify-between">
-                    <div className="space-x-1">
-                      {
-                        currentTopics.length > 0 ? (
-                          currentTopics.map((topic) => (
-                            <Badge key={topic}>
-                              {responseGetTopics && responseGetTopics.find((t) => t.id === topic)?.name}
-                              <X onClick={() => console.log(topic)}/>
-                            </Badge>
-                          ))
-                        ) : (
-                          <span>Select Topic</span>
-                        )
-                      }
-                    </div> 
-                    <ChevronsUpDown />
-                  </Button>
-                </FormControl> 
-              </PopoverTrigger>
-              <PopoverContent className="p-0">
-                <Command>
-                  <CommandInput placeholder="Search Topic" />
-                  <CommandList>
-                    <CommandEmpty>No Topic Found.</CommandEmpty>
-                    <CommandGroup>
-                      {
-                        responseGetTopics && responseGetTopics.map((topic) => (
-                          <CommandItem 
-                            key={topic.id} 
-                            value={topic.name} 
-                            onSelect={() => {
-                              const isTopicsExists = currentTopics.includes(topic.id)
-                              const newTopics = isTopicsExists
-                                ? currentTopics.filter((id) => id !== topic.id)
-                                : [...currentTopics, topic.id]
-
-                              form.setValue("topics", newTopics)
-                            }}
-                          >
-                            {topic.name}
-                            {currentTopics.includes(topic.id) && <Check className="ml-auto" />}
-                          </CommandItem>
-                        ))
-                      }
-                    </CommandGroup>
-                  </CommandList>              
-                </Command>
-              </PopoverContent>
-            </Popover>
+            <div className="flex flex-col gap-2">
+              <div className="flex flex-wrap gap-2">
+                {
+                  currentTopics && currentTopics.map((topic) => (
+                    <Badge key={topic}>
+                      {responseGetTopics && responseGetTopics.find((t) => t.id === topic)?.name}
+                      <span onClick={() => handleDeleteTopicOnPost(topic)} className="p-1">
+                        <X size={16} />
+                      </span>
+                    </Badge> 
+                  ))
+                }
+              </div>
+              <FormItem> 
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <FormControl>
+                      <Button variant="outline" role="combobox" className="justify-between">
+                        Select Topic
+                        <ChevronsUpDown />
+                      </Button>
+                    </FormControl> 
+                  </PopoverTrigger>
+                  <PopoverContent className="p-0 max-w-4xl w-screen">
+                    <Command>
+                      <CommandInput placeholder="Search Topic At Least 3 Characters" />
+                      <CommandList>
+                        <CommandEmpty>No Topic Found.</CommandEmpty>
+                        <CommandGroup>
+                          {
+                            responseGetTopics && responseGetTopics.map((topic) => (
+                              <CommandItem 
+                                key={topic.id} 
+                                value={topic.name} 
+                                onSelect={() => {
+                                  const isTopicsExists = currentTopics.includes(topic.id)
+                                  const newTopics = isTopicsExists ? currentTopics.filter((id) => id !== topic.id) : [...currentTopics, topic.id]
+                                  form.setValue("topics", newTopics)
+                                }}
+                              >
+                                {topic.name}
+                                {currentTopics.includes(topic.id) && <Check className="ml-auto" />}
+                              </CommandItem>
+                            ))
+                          }
+                        </CommandGroup>
+                      </CommandList>              
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+                <FormMessage />
+              </FormItem>
+            </div>
           )
         }}
       />
@@ -140,7 +153,7 @@ const PostForm = ({ imageUrl, setImageUrl }: PostFormProps) => {
               <Textarea 
                 {...field} 
                 placeholder="Your Title Here..." 
-                className="h-[5rem] border-none focus-visible:ring-0 resize-none" 
+                className="border-2 border-muted focus-visible:ring-0" 
               /> 
             </FormControl>
             <FormMessage />
@@ -156,7 +169,7 @@ const PostForm = ({ imageUrl, setImageUrl }: PostFormProps) => {
               <Textarea 
                 {...field} 
                 placeholder="Your Description Here..." 
-                className="h-[8rem] border-none focus-visible:ring-0 resize-none" 
+                className="border-2 border-muted focus-visible:ring-0" 
               />
             </FormControl>
             <FormMessage />

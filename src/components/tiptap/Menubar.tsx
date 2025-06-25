@@ -36,7 +36,7 @@ const Menubar = ({ editor }: { editor: Editor | null }) => {
   }
   
   return (
-    <div className="flex border-b-2 border-muted">
+    <div className="flex flex-wrap border-b-2 border-muted">
       <Toggle pressed={false} onPressedChange={() => editor.chain().focus().undo().run()}>
         <UndoIcon />
       </Toggle>

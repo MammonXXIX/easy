@@ -17,7 +17,7 @@ const Tiptap = ({ value, onChange }: TiptapProps) => {
     content: value,
     editorProps: {
       attributes: {
-        class: "focus:outline-none"
+        class: "p-8"
       }
     },
     onUpdate({ editor }) {
@@ -34,9 +34,9 @@ const Tiptap = ({ value, onChange }: TiptapProps) => {
   }, [value, editor]);
 
   return (
-    <div className="max-h-[40rem] flex flex-col border rounded-xl bg-primary-foreground">
+    <div className="max-h-[40rem] flex flex-col border-2 border-muted rounded-xl bg-primary-foreground">
       <Menubar editor={editor} />
-      <EditorContent editor={editor} className="p-8 overflow-y-auto tiptap" />
+      <EditorContent editor={editor} className="overflow-y-auto tiptap" />
       <Bottombar editor={editor} />
     </div>
   )

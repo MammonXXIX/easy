@@ -6,6 +6,7 @@ import { NextPage } from "next";
 import type { AppProps } from "next/app";
 import { ReactElement, ReactNode } from "react";
 import { Geist } from "next/font/google";
+import { Toaster } from "@/components/ui/sonner";
 
 const geist = Geist({ subsets: ['latin'] })
 
@@ -25,6 +26,7 @@ function App({ Component, pageProps }: AppPropsWithLayout) {
       <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
         <div className={`${geist.className}`}>
           {getLayout(<Component {...pageProps} />)}
+          <Toaster />
         </div>
       </ThemeProvider>
     </ClerkProvider>

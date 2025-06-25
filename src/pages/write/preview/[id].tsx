@@ -3,10 +3,11 @@ import { Button } from "@/components/ui/button"
 import { DateFormatter } from "@/utils/DateFormatter"
 import { trpc } from "@/utils/trpc"
 import { skipToken } from "@tanstack/react-query"
-import { Calendar, Earth, Pencil } from "lucide-react"
+import { Calendar, Earth, EarthLock, Pencil } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import { useRouter } from "next/router"
+import { toast } from "sonner"
 
 const PreviewPage = () => {
   const router = useRouter()
@@ -14,7 +15,23 @@ const PreviewPage = () => {
 
   const postId = typeof id === "string" ? id : Array.isArray(id) ? id[0] : null
 
-  const {data: responsePost} = trpc.post.getPost.useQuery(postId ? { id: postId } : skipToken)
+  const { data: responsePost } = trpc.post.getUserPost.useQuery(postId ? { id: postId } : skipToken)
+  const { mutate: updatePostStatus } = trpc.post.updatePostStatus.useMutation({
+    onSuccess: () => {
+      toast("Successfully Update Status Post")
+      router.reload()
+    }
+  })
+
+  const handlePublishPostStatus = () => {
+    if (!postId) return
+    updatePostStatus({ id: postId, isToPublish: true })
+  }
+
+  const handlePrivatePostStatus = () => {
+    if (!postId) return
+    updatePostStatus({ id: postId, isToPrivate: true })
+  } 
 
   return (
     <div className="flex justify-center">
@@ -37,10 +54,14 @@ const PreviewPage = () => {
                 </span>
               </div>
             </div>
-                
-            <div className="w-full h-[20rem] relative">
-              <Image src={responsePost.imageUrl} alt="Image" fill priority className="object-cover rounded" />
-            </div> 
+
+            {
+              responsePost.imageUrl && (
+                <div className="w-full h-[20rem] relative">
+                  <Image src={responsePost.imageUrl} alt="Image" fill priority className="object-cover rounded" />
+                </div> 
+              )
+            } 
 
             <div dangerouslySetInnerHTML={{__html: responsePost.content}} className="max-w-none prose dark:prose-invert tiptap" />
           </div>
@@ -48,9 +69,17 @@ const PreviewPage = () => {
       )}
 
       <div className="fixed right-10 bottom-10 flex flex-col gap-2">
-        <Link href={``} className="p-4 rounded-full bg-muted">
-          <Earth size={16} />
-        </Link>
+        {
+          responsePost && responsePost.status !== "PUBLISH" ? (
+            <span onClick={handlePublishPostStatus} className="p-4 rounded-full bg-muted">
+              <Earth size={16} className="text-green-500" /> 
+            </span>
+          ) : (
+            <span onClick={handlePrivatePostStatus} className="p-4 rounded-full bg-muted">
+              <EarthLock size={16} className="text-red-500" /> 
+            </span>
+          )
+        } 
         <Link href={`/write/${postId}`} className="p-4 rounded-full bg-muted">
           <Pencil size={16} />
         </Link>

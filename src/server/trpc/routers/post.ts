@@ -3,9 +3,12 @@ import { protectedProcedure, router } from '../trpc'
 import { TRPCError } from '@trpc/server'
 import { supabaseClient } from '../../supabase/admin'
 import { Bucket } from '@/server/supabase/bucket'
+import { PostStatus } from '@prisma/client'
+import { isOwner } from '../middlewares/isOwner'
 
 export const postRouter = router({
-  getPost: protectedProcedure
+  getUserPost: protectedProcedure
+    .use(isOwner)
     .input(
       z.object({
         id: z.string()
@@ -19,10 +22,52 @@ export const postRouter = router({
         include: {
           user: { select: { firstName: true } } 
         } 
-      })
+      }) 
 
       return post
-    }), 
+    }),
+
+  getUserPosts: protectedProcedure
+    .input(
+      z.object({
+        status: z.nativeEnum(PostStatus)
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      const { session, prisma } = ctx 
+
+      return await prisma.post.findMany({
+        where: { status: input.status, userId: session.userId }
+      })
+    }),
+
+  getUsersPosts: protectedProcedure.query(async ({ ctx }) => {
+    const { prisma }  = ctx
+
+    return await prisma.post.findMany({
+      where: { status: "PUBLISH" },
+      include: {
+        user: { 
+          select: { firstName: true, imageUrl: true } 
+        }
+      },
+      orderBy: { createdAt: "asc" }
+    })
+  }),
+
+  getEasyPicksPosts: protectedProcedure.query(async ({ ctx }) => {
+    const { prisma } = ctx
+
+    return await prisma.post.findMany({
+      where: { status: "PUBLISH" },
+      include: {
+        user: { 
+          select: { firstName: true, imageUrl: true } 
+        }
+      },
+      take: 3
+    })
+  }),
 
   createPost: protectedProcedure.mutation(async ({ ctx }) => {
     const { session, prisma } = ctx
@@ -59,6 +104,7 @@ export const postRouter = router({
     }),
 
   updatePost: protectedProcedure
+    .use(isOwner)
     .input(
       z.object({
         id: z.string(),
@@ -66,29 +112,67 @@ export const postRouter = router({
         description: z.string(),
         content: z.string(),
         imageUrl: z.string(),
-      }) 
+        topics: z.array(z.string()).optional()
+      })
     )
     .mutation(async ({ ctx, input}) => {
-      const { session, prisma } = ctx
+      const { prisma } = ctx
 
       const updatePost = await prisma.post.update({
-        where: { id: input.id, userId: session.userId},
+        where: { id: input.id},
         data: {
           title: input.title,
           description: input.description,
           content: input.content,
-          imageUrl: input.imageUrl
+          imageUrl: input.imageUrl,
+          topics: {
+            deleteMany: {},
+            create: (input.topics || []).map((topicId) => ({ topic: { connect: { id: topicId } } }))
+          }
         }
       }) 
 
       return updatePost
     }),
 
-    getTopics: protectedProcedure.query(async ({ ctx }) => {
-      const { prisma } = ctx
+    updatePostStatus: protectedProcedure
+      .use(isOwner)
+      .input(
+        z.object({
+          id: z.string(),
+          isToDraft: z.boolean().optional(),
+          isToPublish: z.boolean().optional(),
+          isToPrivate: z.boolean().optional()
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        const { prisma } = ctx 
 
-      const topics = await prisma.topic.findMany()
+        let newStatus: PostStatus
 
-      return topics
-    })
+        if (input.isToDraft) newStatus = PostStatus.DRAFT
+        else if (input.isToPublish) newStatus = PostStatus.PUBLISH
+        else if (input.isToPrivate) newStatus = PostStatus.PRIVATE
+        else throw new TRPCError({ code: "BAD_REQUEST", message: "No Valid Status Update Provided" })
+
+        await prisma.post.update({
+          where: { id: input.id },
+          data: { status: newStatus }
+        })
+      }),
+
+    deletePost: protectedProcedure
+      .use(isOwner)
+      .input(
+        z.object({
+          id: z.string()
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        const { prisma } = ctx
+
+        await prisma.post.delete({
+          where: { id: input.id}
+        })
+      })
 })

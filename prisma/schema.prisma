@@ -25,7 +25,7 @@ model Post {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  postTopics PostTopic[]
+  topics TopicOnPosts[]
 
   userId String
   user User @relation(fields: [userId], references: [id])
@@ -35,10 +35,10 @@ model Topic {
   id String @id @default(uuid())
   name String
 
-  postTopics PostTopic[]
+  posts TopicOnPosts[]
 }
 
-model PostTopic {
+model TopicOnPosts {
   postId String
   topicId String
 

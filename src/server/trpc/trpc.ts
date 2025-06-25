@@ -27,8 +27,8 @@ export const protectedProcedure = t.procedure.use(async ({ctx, next}) => {
   if (!ctx.session.userId) throw new TRPCError({ code: "UNAUTHORIZED" })
 
   return next({
-    ctx: {
-      session: {...ctx.session}
-    }
+    ctx: { session: {...ctx.session} }
   })
 })
+export const middleware = t.middleware
+
