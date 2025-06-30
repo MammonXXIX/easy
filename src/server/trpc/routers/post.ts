@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { protectedProcedure, router } from '../trpc'
+import { protectedProcedure, publicProcedure, router } from '../trpc'
 import { TRPCError } from '@trpc/server'
 import { supabaseClient } from '../../supabase/admin'
 import { Bucket } from '@/server/supabase/bucket'
@@ -7,8 +7,7 @@ import { PostStatus } from '@prisma/client'
 import { isOwner } from '../middlewares/isOwner'
 
 export const postRouter = router({
-  getUserPost: protectedProcedure
-    .use(isOwner)
+  getUserPostPublic: publicProcedure
     .input(
       z.object({
         id: z.string()
@@ -18,9 +17,33 @@ export const postRouter = router({
       const { prisma } = ctx
 
       const post = await prisma.post.findUnique({
+        where: { id: input.id, status: "PUBLISH" },
+        include: {
+          user: { 
+            select: { firstName: true, imageUrl: true } 
+          } 
+        } 
+      }) 
+
+      return post
+    }), 
+
+  getUserPost: protectedProcedure
+    .use(isOwner)
+    .input(
+      z.object({
+        id: z.string()
+      }) 
+    )
+    .query(async ({ ctx, input }) => {
+      const { prisma } = ctx
+
+      const post = await prisma.post.findUnique({
         where: { id: input.id },
         include: {
-          user: { select: { firstName: true } } 
+          user: { 
+            select: { firstName: true, imageUrl: true } 
+          } 
         } 
       }) 
 
@@ -37,25 +60,46 @@ export const postRouter = router({
       const { session, prisma } = ctx 
 
       return await prisma.post.findMany({
-        where: { status: input.status, userId: session.userId }
+        where: { status: input.status, userId: session.userId },
+        orderBy: { updatedAt: "desc" }
       })
     }),
 
-  getUsersPosts: protectedProcedure.query(async ({ ctx }) => {
-    const { prisma }  = ctx
+  getUsersPosts: protectedProcedure
+    .input(
+      z.object({
+        cursor: z.string().optional(),
+        limit: z.number().min(4).max(32).optional().default(8) 
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      const { session, prisma }  = ctx
 
-    return await prisma.post.findMany({
-      where: { status: "PUBLISH" },
-      include: {
-        user: { 
-          select: { firstName: true, imageUrl: true } 
-        }
-      },
-      orderBy: { createdAt: "asc" }
-    })
-  }),
+      const posts = await prisma.post.findMany({
+        where: { status: "PUBLISH" },
+        include: { user: { select: { firstName: true, imageUrl: true } } },
+        orderBy: { updatedAt: "desc" },
+        take: input.limit + 1,
+        cursor: input.cursor ? { id: input.cursor } : undefined
+      })
 
-  getEasyPicksPosts: protectedProcedure.query(async ({ ctx }) => {
+      const postIds = posts.map((post) => post.id)
+      const savedPosts = await prisma.savedPost.findMany({
+        where: {userId: session.userId, postId: { in: postIds }}
+      })
+      const savedPostIds = new Set(savedPosts.map((savedPost) => savedPost.postId))
+
+      const enrichedPosts = posts.map((post) => ({ ...post, isSaved: savedPostIds.has(post.id) }))
+
+      const nextCursor = posts.length > input.limit ? posts[input.limit].id : undefined
+
+      return {
+        posts: enrichedPosts.slice(0, input.limit),
+        nextCursor
+      }
+    }),
+
+  getRecommendedPosts: protectedProcedure.query(async ({ ctx }) => {
     const { prisma } = ctx
 
     return await prisma.post.findMany({
@@ -65,6 +109,7 @@ export const postRouter = router({
           select: { firstName: true, imageUrl: true } 
         }
       },
+      orderBy: { view: "desc" },
       take: 3
     })
   }),
@@ -128,7 +173,7 @@ export const postRouter = router({
           topics: {
             deleteMany: {},
             create: (input.topics || []).map((topicId) => ({ topic: { connect: { id: topicId } } }))
-          }
+          }, 
         }
       }) 
 
@@ -174,5 +219,37 @@ export const postRouter = router({
         await prisma.post.delete({
           where: { id: input.id}
         })
+      }),
+
+    getSavedPost: protectedProcedure 
+      .query(async ({ ctx }) => {
+        const { session, prisma } = ctx
+
+        return await prisma.savedPost.findMany({
+          where: { userId: session.userId }
+        })
+      }),
+
+    updateSavedPost: protectedProcedure
+      .input(
+        z.object({
+          id: z.string(),
+          isSaved: z.boolean()
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        const {session, prisma} = ctx
+
+        if(!input.isSaved) {
+          return await prisma.savedPost.create({
+            data: { userId: session.userId, postId: input.id }
+          })
+        } else {
+          return await prisma.savedPost.delete({
+            where: { 
+              userId_postId: { userId: session.userId, postId: input.id }
+            }
+          })
+        }
       })
 })

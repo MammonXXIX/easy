@@ -33,6 +33,7 @@ const PostForm = ({ imageUrl, setImageUrl }: PostFormProps) => {
   const { data: responseGetTopics } = trpc.topic.getTopics.useQuery()
   const { mutate: deleteTopicOnPost } = trpc.topic.deleteTopicOnPost.useMutation({
     onSuccess: async () => {
+      await trpcUtils.post.getUserPost.invalidate()
       await trpcUtils.topic.getTopicOnPost.invalidate()
     }
   })

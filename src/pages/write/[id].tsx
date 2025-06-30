@@ -11,6 +11,42 @@ import { useRouter } from "next/router";
 import { skipToken } from "@tanstack/react-query";
 import { useSavingStore } from "@/stores/SavingStore";
 import { useFormPostStore } from "@/stores/FormPostStore";
+import { GetServerSidePropsContext } from "next";
+import { appRouter } from "@/server/trpc/routers/_app";
+import { createInnerTRPCContext } from "@/server/trpc/trpc";
+import { getAuth } from "@clerk/nextjs/server";
+import { TRPCError } from "@trpc/server";
+
+export async function getServerSideProps(context: GetServerSidePropsContext<{ id: string }>) {
+  const { req, params } = context
+
+  if (!params) return
+
+  const id = params.id as string
+  const auth = getAuth(req)
+
+  const ctx = createInnerTRPCContext({ session: auth })
+  const caller = appRouter.createCaller(ctx)
+
+  try {
+    await caller.post.getUserPost({ id }) 
+  } catch (error) {
+    if (error instanceof TRPCError) {
+      console.error(`TRPCError: ${error.code}, ${error.message}`)
+
+      if (error.code === "FORBIDDEN" || error.code === "NOT_FOUND") return {
+        redirect: {
+          destination: "/",
+          permanent: false
+        }
+      }
+    }
+  }
+  
+  return {
+    props: {}
+  }
+}
 
 const WritePage: NextPageWithLayout = () => {
   const router = useRouter()
@@ -24,13 +60,9 @@ const WritePage: NextPageWithLayout = () => {
   const { id } = router.query
   const postId = typeof id === "string" ? id : Array.isArray(id) ? id[0] : null  
 
-  const { data: responseUserPost, isLoading: loadingUserPost, error: errorUserPost } = trpc.post.getUserPost.useQuery(postId ? { id: postId } : skipToken)
+  const { data: responseUserPost, isLoading: loadingUserPost } = trpc.post.getUserPost.useQuery(postId ? { id: postId } : skipToken)
   const { data: responseTopicOnPost, isLoading: loadingTopicOnPost } = trpc.topic.getTopicOnPost.useQuery(postId ? { id: postId } : skipToken)
-  const { mutate: updatePost } = trpc.post.updatePost.useMutation({ onMutate: () => setIsSaving(true), onSettled: () => setIsSaving(false) }) 
-
-  if (errorUserPost) {
-    if (errorUserPost.data?.code === "FORBIDDEN") router.replace("/")
-  }
+  const { mutate: updatePost } = trpc.post.updatePost.useMutation({ onMutate: () => setIsSaving(true), onSettled: () => setIsSaving(false) })  
 
   useEffect(() => {
     if (responseUserPost && responseTopicOnPost) {
@@ -51,7 +83,7 @@ const WritePage: NextPageWithLayout = () => {
         imageUrl: imageUrl ?? "",
         topics: watchUpdatePostForm.topics
       })
-    }, 1000)
+    }, 1000) 
 
     setForm(updatePostForm)
 

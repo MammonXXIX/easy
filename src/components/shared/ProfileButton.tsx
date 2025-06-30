@@ -18,8 +18,12 @@ export const ProfileButton = () => {
           <AvatarFallback>CN</AvatarFallback>
         </Avatar>
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-64"> 
-        <DropdownMenuItem><Library /> Library</DropdownMenuItem>
+      <DropdownMenuContent className="w-64">
+        <DropdownMenuItem asChild>
+          <Link href="/library">
+            <Library /> Library
+          </Link>
+        </DropdownMenuItem>   
         <DropdownMenuItem asChild>
           <Link href="/stories">
             <Book /> Stories

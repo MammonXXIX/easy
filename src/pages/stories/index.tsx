@@ -17,7 +17,7 @@ import { useRouter } from "next/router"
 type PostCardProps = {
   id: string
   title?: string
-  updatedAt: string
+  updatedAt: Date
 }
 
 const PostCard = ({ id, title, updatedAt }: PostCardProps) => {
@@ -60,7 +60,7 @@ const StoriesPage: NextPageWithLayout = () => {
       router.push(`/write/${data.id}`)
     }
   })
-  const { data: responseUserPosts, isLoading: loadingUserPosts } = trpc.post.getUserPosts.useQuery({ status: selectedStatus })
+  const { data: posts, isLoading: isLoadingPosts } = trpc.post.getUserPosts.useQuery({ status: selectedStatus })
 
   return (
     <RightSideBar>
@@ -82,13 +82,13 @@ const StoriesPage: NextPageWithLayout = () => {
         }
       </div>
       <div className="mt-8 flex flex-col gap-4">
-        { loadingUserPosts && <span>Loading...</span> }
+        { isLoadingPosts && <span>Loading...</span> }
         {
-          responseUserPosts && responseUserPosts.map((post) => (
+          posts && posts.map((post) => (
             <PostCard key={post.id} id={post.id} title={post.title} updatedAt={post.updatedAt} />
           )) 
         }
-        { responseUserPosts && responseUserPosts.length === 0 && <span>No {CapitalizedString(selectedStatus)} Post Found.</span> }
+        { posts && posts.length === 0 && <span>No {CapitalizedString(selectedStatus)} Post Found.</span> }
       </div>
     </RightSideBar>
   )

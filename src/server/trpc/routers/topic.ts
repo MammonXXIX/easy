@@ -19,7 +19,7 @@ export const topicRouter = router({
     .query(async ({ ctx, input }) => {
       const { prisma } = ctx
 
-      const topicOnPost = await prisma.topicOnPosts.findMany({
+      const topicOnPost = await prisma.topicOnPost.findMany({
         where: { postId: input.id }
       })
 
@@ -36,7 +36,7 @@ export const topicRouter = router({
     .mutation(async ({ ctx, input}) => {
       const { prisma } = ctx
 
-      return await prisma.topicOnPosts.delete({
+      return await prisma.topicOnPost.delete({
         where: {
           postId_topicId: { postId: input.postId, topicId: input.topicId }
         } 

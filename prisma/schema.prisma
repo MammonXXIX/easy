@@ -14,6 +14,16 @@ enum PostStatus {
   PUBLISH
 }
 
+model User {
+  id String @id
+  email String
+  firstName String
+  imageUrl String
+
+  posts Post[]
+  savedPosts SavedPost[]
+}
+
 model Post {
   id String @id @default(uuid())
   title String
@@ -24,21 +34,23 @@ model Post {
   status PostStatus @default(DRAFT)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  topics TopicOnPosts[]
-
+ 
   userId String
   user User @relation(fields: [userId], references: [id])
+
+  topics TopicOnPost[]
+  savedBy SavedPost[]
+
 }
 
 model Topic {
   id String @id @default(uuid())
   name String
 
-  posts TopicOnPosts[]
+  posts TopicOnPost[]
 }
 
-model TopicOnPosts {
+model TopicOnPost {
   postId String
   topicId String
 
@@ -48,12 +60,13 @@ model TopicOnPosts {
   @@id([postId, topicId])
 }
 
-model User {
-  id String @id
-  email String
-  firstName String
-  imageUrl String
+model SavedPost {
+  userId String
+  postId String
 
-  posts Post[]
+  user   User @relation(fields: [userId], references: [id])
+  post   Post @relation(fields: [postId], references: [id])
+
+  @@id([userId, postId])
 }
 

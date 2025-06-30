@@ -1,6 +1,6 @@
-import { format, parseISO } from 'date-fns'
+import { format } from 'date-fns'
 import { id } from 'date-fns/locale'
 
-export const DateFormatter = (value: string): string => {
-  return format(parseISO(value), "dd MMMM yyyy, HH:mm", { locale: id })
+export const DateFormatter = (value: Date): string => {
+  return format(value, "dd MMMM yyyy, HH:mm", { locale: id })
 }
