@@ -114,6 +114,58 @@ export const postRouter = router({
     })
   }),
 
+  searchPosts: protectedProcedure
+    .input(
+      z.object({
+        search: z.string().optional(),
+        limit: z.number().min(4).max(32).optional().default(4)
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      const { prisma } = ctx
+
+      const posts = await prisma.post.findMany({
+        where: {
+          title: { 
+            contains: input.search || "",
+            mode: "insensitive"
+          }
+        },
+        include: {
+          user: { 
+            select: { firstName: true, imageUrl: true } 
+          }
+        },
+        take: input.limit
+      })
+
+      const topics = await prisma.topic.findMany({
+        where: {
+          name: { 
+            contains: input.search || "",
+            mode: "insensitive"
+          }
+        },
+        take: input.limit
+      })
+
+      const users = await prisma.user.findMany({
+        where: {
+          firstName: { 
+            contains: input.search || "",
+            mode: "insensitive"
+          }
+        },
+        take: input.limit
+      })
+
+      return {
+        posts,
+        topics,
+        users
+      }
+    }),
+
   createPost: protectedProcedure.mutation(async ({ ctx }) => {
     const { session, prisma } = ctx
 
@@ -219,37 +271,68 @@ export const postRouter = router({
         await prisma.post.delete({
           where: { id: input.id}
         })
-      }),
+      }), 
 
-    getSavedPost: protectedProcedure 
-      .query(async ({ ctx }) => {
-        const { session, prisma } = ctx
-
-        return await prisma.savedPost.findMany({
-          where: { userId: session.userId }
+    getSavedPosts: protectedProcedure
+      .input(
+        z.object({
+          cursor: z.object({
+            userId: z.string(),
+            postId: z.string()
+          }).optional(),
+          limit: z.number().min(4).max(32).optional().default(8) 
         })
+      )
+      .query(async ({ ctx, input }) => {
+        const { session, prisma }  = ctx
+
+        const posts = await prisma.savedPost.findMany({
+          where: { userId: session.userId },
+          include: { 
+            post: {
+              include: { 
+                user: { select: { firstName: true, imageUrl: true } }
+              }
+            } 
+          },
+          take: input.limit + 1,
+          cursor: input.cursor ? { userId_postId: input.cursor } : undefined
+        }) 
+
+        const nextCursor = posts.length > input.limit ? { userId: posts[input.limit].userId, postId: posts[input.limit].postId } : undefined
+
+        return {
+          posts: posts.slice(0, input.limit).map((savedPost) => ({ ...savedPost.post })),
+          nextCursor
+        }
       }),
+
 
     updateSavedPost: protectedProcedure
       .input(
         z.object({
-          id: z.string(),
-          isSaved: z.boolean()
+          id: z.string()
         })
       )
       .mutation(async ({ ctx, input }) => {
         const {session, prisma} = ctx
 
-        if(!input.isSaved) {
-          return await prisma.savedPost.create({
-            data: { userId: session.userId, postId: input.id }
-          })
-        } else {
+        const isPostSaved = await prisma.savedPost.findUnique({
+          where: {
+            userId_postId: { userId: session.userId, postId: input.id }
+          }
+        })
+
+        if (isPostSaved) {
           return await prisma.savedPost.delete({
-            where: { 
+            where: {
               userId_postId: { userId: session.userId, postId: input.id }
             }
           })
+        } else {
+          return await prisma.savedPost.create({
+            data: { userId: session.userId, postId: input.id }
+          });
         }
       })
 })

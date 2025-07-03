@@ -1,40 +1,95 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/pages/api-reference/create-next-app).
+# Simple Point of Sale System
 
-## Getting Started
+## 🛠 Tech Stack
 
-First, run the development server:
+### Frontend
+
+- Next.js
+- React
+- TypeScript
+- Tailwind CSS
+- Shadcn/UI
+- Zustand (State Management)
+
+### Backend & API
+
+- tRPC
+- Prisma
+
+### Third-Party Services
+
+- **Clerk** – Authentication
+- **Supabase** – PostgreSQL Database & Storage
+
+### Others
+
+- ESLint & Prettier
+- Ngrok – for local webhook testing
+
+## 🚀 Features
+
+- Integrated Clerk for secure user sign‑in and sign‑up flows.
+- Built full CRUD functionality for blog posts
+- Integrated a rich text editor for enhanced post creation and editing
+- Integrated Supabase Storage for efficient post image management
+- Developed a search feature to help users quickly find relevant blog posts
+- Implemented infinite scrolling for seamless content loading
+- Added optimistic UI updates to keep the interface responsive during data mutations
+
+## 📦 Installation
+
+Follow these steps to get started:
+
+### 1. Prerequisites
+
+- Ensure you have [Node.js](https://nodejs.org/) (LTS version recommended) and npm or Yarn installed.
+- Clone this repository:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone https://github.com/MammonXXIX/easy.git
+
+cd FOLDER_NAME
+
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 2. Configure Environment Variables
 
-You can start editing the page by modifying `pages/index.tsx`. The page auto-updates as you edit the file.
+This project requires several API credentials stored in a `.env` file.
 
-[API routes](https://nextjs.org/docs/pages/building-your-application/routing/api-routes) can be accessed on [http://localhost:3000/api/hello](http://localhost:3000/api/hello). This endpoint can be edited in `pages/api/hello.ts`.
+1. Copy the `.env.example` file and rename it to `.env`:
 
-The `pages/api` directory is mapped to `/api/*`. Files in this directory are treated as [API routes](https://nextjs.org/docs/pages/building-your-application/routing/api-routes) instead of React pages.
+    ```bash
+    cp .env.example .env
+    ```
 
-This project uses [`next/font`](https://nextjs.org/docs/pages/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+2. Fill in the `.env` variables with your own credentials:
 
-## Learn More
+    - **Clerk:**
 
-To learn more about Next.js, take a look at the following resources:
+        - `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`
+        - `CLERK_SECRET_KEY`
+        - `CLERK_WEBHOOK_SIGNIN_SECRET`
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn-pages-router) - an interactive Next.js tutorial.
+    - **Supabase Database (Prisma):**
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+        - `DATABASE_URL`
+        - `DIRECT_URL`
 
-## Deploy on Vercel
+    - **Supabase JS Client:**
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+        - `NEXT_PUBLIC_SUPABASE_URL`
+        - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+        - `SUPABASE_SERVICE_ROLE_KEY` (**KEEP THIS SECRET!**)
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/pages/building-your-application/deploying) for more details.
+    - **Supabase Storage:**
+        - Create a public bucket named `post-images` & `post-content-images` (or match the bucket name used in `src/server/supabase/bucket.ts`) in the Supabase Storage dashboard
+
+### 3. Sync the Database
+
+After setting up your `.env` file, run the following command to push the schema to your Supabase database:
+
+```bash
+npx prisma generate
+```
+
