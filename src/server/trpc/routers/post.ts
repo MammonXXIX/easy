@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { protectedProcedure, publicProcedure, router } from '../trpc'
+import { protectedProcedure, router } from '../trpc'
 import { TRPCError } from '@trpc/server'
 import { supabaseClient } from '../../supabase/admin'
 import { Bucket } from '@/server/supabase/bucket'
@@ -7,14 +7,14 @@ import { PostStatus } from '@prisma/client'
 import { isOwner } from '../middlewares/isOwner'
 
 export const postRouter = router({
-  getUserPostPublic: publicProcedure
+  getUserPostPublic: protectedProcedure
     .input(
       z.object({
         id: z.string()
       })
     )
     .query(async ({ ctx, input }) => {
-      const { prisma } = ctx
+      const { session, prisma } = ctx
 
       const post = await prisma.post.findUnique({
         where: { id: input.id, status: "PUBLISH" },
@@ -23,9 +23,17 @@ export const postRouter = router({
             select: { firstName: true, imageUrl: true } 
           } 
         } 
-      }) 
+      })
 
-      return post
+      if (!post) throw new TRPCError({ code: "NOT_FOUND" })
+
+      const savedPost = await prisma.savedPost.findUnique({
+        where: { userId_postId: { userId: session.userId, postId: post.id  } }
+      })
+
+      const enrichedPost = { ...post, isSaved: !!savedPost } 
+
+      return enrichedPost
     }), 
 
   getUserPost: protectedProcedure

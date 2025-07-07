@@ -46,8 +46,7 @@ const LibraryPage: NextPageWithLayout = () => {
   return (
     <RightSideBar>
       <div className="flex justify-between items-center">
-        <h1 className="font-bold text-3xl">Your Library</h1>
-        <Button onClick={() => {}}>New List</Button>
+        <h1 className="font-bold text-3xl">Your Library</h1> 
       </div>
       <div className="mt-4 py-2 flex gap-6 border-b-1">        
         <span className="cursor-pointer">Your Lists</span> 

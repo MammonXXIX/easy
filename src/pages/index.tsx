@@ -2,9 +2,7 @@ import { NextPageWithLayout } from "./_app";
 import { ReactElement } from "react";
 import HomeLayout from "@/components/layouts/HomeLayout";
 import RightSideBar from "@/components/shared/RightSideBar";
-
 import { trpc } from "@/utils/trpc";
-
 import { Spinner } from "@/components/ui/spinner";
 import InfiniteScrollContainer from "@/components/containers/InfiniteScrollContainer";
 import { PostCard } from "@/components/shared/PostCard";
