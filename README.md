@@ -1,5 +1,18 @@
 # Simple Point of Sale System
 
+## Preview
+
+<p align="center">
+  <img src="public/preview/001.png" width="400"/>
+  <img src="public/preview/002.png" width="400"/>
+  <br/>
+  <img src="public/preview/003.png" width="400"/>
+  <img src="public/preview/004.png" width="400"/>
+  <br/>
+  <img src="public/preview/005.png" width="400"/>
+  <img src="public/preview/006.png" width="400"/>
+</p>
+
 ## 🛠 Tech Stack
 
 ### Frontend
