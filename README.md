@@ -1,4 +1,4 @@
-# Simple Point of Sale System
+# Simple Blog Website
 
 ## Preview
 
