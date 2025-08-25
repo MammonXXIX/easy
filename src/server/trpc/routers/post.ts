@@ -77,7 +77,7 @@ export const postRouter = router({
     .input(
       z.object({
         cursor: z.string().optional(),
-        limit: z.number().min(4).max(32).optional().default(8) 
+        limit: z.number().min(4).max(32).optional().default(5) 
       })
     )
     .query(async ({ ctx, input }) => {
